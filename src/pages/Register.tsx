@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { useForm } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useAuth } from '../contexts/AuthContext'
@@ -38,14 +38,14 @@ export default function Register() {
   const {
     register,
     handleSubmit,
-    watch,
-    setValue,
+    control,
     formState: { errors }
   } = useForm<RegisterFormData>({
-    resolver: zodResolver(registerSchema)
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      role: undefined
+    }
   })
-
-  const selectedRole = watch('role')
 
   // Redirect if already authenticated
   if (user) {
@@ -177,26 +177,32 @@ export default function Register() {
 
               <div className="space-y-3">
                 <Label>I am a...</Label>
-                <RadioGroup
-                  value={selectedRole}
-                  onValueChange={(value) => setValue('role', value as 'student' | 'teacher', { shouldValidate: true })}
-                  className="grid grid-cols-2 gap-4"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="student" id="student" />
-                    <Label htmlFor="student" className="flex items-center cursor-pointer">
-                      <GraduationCap className="h-4 w-4 mr-2 text-blue-500" />
-                      Student
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="teacher" id="teacher" />
-                    <Label htmlFor="teacher" className="flex items-center cursor-pointer">
-                      <Users className="h-4 w-4 mr-2 text-green-500" />
-                      Teacher
-                    </Label>
-                  </div>
-                </RadioGroup>
+                <Controller
+                  name="role"
+                  control={control}
+                  render={({ field }) => (
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="grid grid-cols-2 gap-4"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="student" id="student" />
+                        <Label htmlFor="student" className="flex items-center cursor-pointer">
+                          <GraduationCap className="h-4 w-4 mr-2 text-blue-500" />
+                          Student
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="teacher" id="teacher" />
+                        <Label htmlFor="teacher" className="flex items-center cursor-pointer">
+                          <Users className="h-4 w-4 mr-2 text-green-500" />
+                          Teacher
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                  )}
+                />
                 {errors.role && (
                   <p className="text-sm text-red-500">{errors.role.message}</p>
                 )}
