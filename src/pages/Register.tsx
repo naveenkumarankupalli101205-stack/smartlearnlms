@@ -39,6 +39,7 @@ export default function Register() {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors }
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema)
@@ -178,7 +179,7 @@ export default function Register() {
                 <Label>I am a...</Label>
                 <RadioGroup
                   value={selectedRole}
-                  onValueChange={(value) => register('role').onChange({ target: { value } })}
+                  onValueChange={(value) => setValue('role', value as 'student' | 'teacher', { shouldValidate: true })}
                   className="grid grid-cols-2 gap-4"
                 >
                   <div className="flex items-center space-x-2">
