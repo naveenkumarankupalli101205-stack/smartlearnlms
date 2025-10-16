@@ -93,7 +93,7 @@ dependencies:
     specifier: ^2.52.0
     version: 2.52.0
   '@tanstack/react-query':
-    specifier: ^5.56.2
+    specifier: ^5.83.0
     version: 5.83.0(react@19.1.1)
   class-variance-authority:
     specifier: ^0.7.1
