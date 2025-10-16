@@ -1,0 +1,162 @@
+@startuml SmartLearn_Classes
+!theme plain
+
+interface IAuthService {
+  +signUp(email: string, password: string, userData: UserData): Promise<AuthResponse>
+  +signIn(email: string, password: string): Promise<AuthResponse>
+  +signOut(): Promise<void>
+  +resetPassword(email: string): Promise<void>
+  +getCurrentUser(): Promise<User | null>
+  +onAuthStateChange(callback: Function): Subscription
+}
+
+interface ICourseService {
+  +createCourse(courseData: CreateCourseData): Promise<Course>
+  +getCourses(filters?: CourseFilters): Promise<Course[]>
+  +getCourseById(id: string): Promise<Course>
+  +updateCourse(id: string, updates: Partial<Course>): Promise<Course>
+  +deleteCourse(id: string): Promise<void>
+  +enrollStudent(courseId: string, studentId: string): Promise<Enrollment>
+}
+
+interface IAssignmentService {
+  +createAssignment(assignmentData: CreateAssignmentData): Promise<Assignment>
+  +getAssignments(courseId: string): Promise<Assignment[]>
+  +submitAssignment(submissionData: SubmissionData): Promise<Submission>
+  +gradeSubmission(submissionId: string, grade: number, feedback: string): Promise<Submission>
+  +getSubmissions(assignmentId: string): Promise<Submission[]>
+}
+
+interface IFileService {
+  +uploadFile(file: File, path: string): Promise<FileUploadResponse>
+  +downloadFile(path: string): Promise<string>
+  +deleteFile(path: string): Promise<void>
+  +getFileUrl(path: string): Promise<string>
+}
+
+class AuthContext {
+  +user: User | null
+  +session: Session | null
+  +loading: boolean
+  +signUp(email: string, password: string, userData: UserData): Promise<void>
+  +signIn(email: string, password: string): Promise<void>
+  +signOut(): Promise<void>
+  +resetPassword(email: string): Promise<void>
+}
+
+class User {
+  +id: string
+  +email: string
+  +name: string
+  +role: 'student' | 'teacher'
+  +email_verified: boolean
+  +created_at: Date
+  +updated_at: Date
+}
+
+class Course {
+  +id: string
+  +title: string
+  +description: string
+  +duration: string
+  +created_by: string
+  +created_at: Date
+  +updated_at: Date
+  +teacher?: User
+  +enrollments?: Enrollment[]
+  +assignments?: Assignment[]
+}
+
+class Assignment {
+  +id: string
+  +course_id: string
+  +title: string
+  +description: string
+  +due_date: Date
+  +created_by: string
+  +created_at: Date
+  +updated_at: Date
+  +course?: Course
+  +submissions?: Submission[]
+}
+
+class Submission {
+  +id: string
+  +assignment_id: string
+  +student_id: string
+  +content?: string
+  +file_url?: string
+  +grade?: number
+  +feedback?: string
+  +submitted_at: Date
+  +graded_at?: Date
+  +assignment?: Assignment
+  +student?: User
+}
+
+class Enrollment {
+  +id: string
+  +student_id: string
+  +course_id: string
+  +enrolled_at: Date
+  +student?: User
+  +course?: Course
+}
+
+class ProtectedRoute {
+  +children: ReactNode
+  +requiredRole?: 'student' | 'teacher'
+  +requireEmailVerified: boolean = true
+  +render(): ReactElement
+}
+
+class Dashboard {
+  +user: User
+  +courses: Course[]
+  +loading: boolean
+  +error: string | null
+  +loadUserData(): Promise<void>
+  +handleError(error: Error): void
+}
+
+class TeacherDashboard {
+  +courses: Course[]
+  +assignments: Assignment[]
+  +submissions: Submission[]
+  +createCourse(courseData: CreateCourseData): Promise<void>
+  +createAssignment(assignmentData: CreateAssignmentData): Promise<void>
+  +gradeSubmission(submissionId: string, grade: number, feedback: string): Promise<void>
+}
+
+class StudentDashboard {
+  +enrolledCourses: Course[]
+  +availableCourses: Course[]
+  +assignments: Assignment[]
+  +submissions: Submission[]
+  +enrollInCourse(courseId: string): Promise<void>
+  +submitAssignment(assignmentId: string, submissionData: SubmissionData): Promise<void>
+}
+
+IAuthService ..> AuthContext : implements
+ICourseService ..> Course : manages
+IAssignmentService ..> Assignment : manages
+IFileService ..> Submission : handles files
+
+AuthContext --> User : contains
+Dashboard --> User : uses
+TeacherDashboard --|> Dashboard : extends
+StudentDashboard --|> Dashboard : extends
+
+Course ||--o{ Enrollment : has
+Course ||--o{ Assignment : contains
+User ||--o{ Enrollment : participates
+User ||--o{ Submission : creates
+Assignment ||--o{ Submission : receives
+
+ProtectedRoute --> AuthContext : uses
+TeacherDashboard --> ICourseService : uses
+TeacherDashboard --> IAssignmentService : uses
+StudentDashboard --> ICourseService : uses
+StudentDashboard --> IAssignmentService : uses
+
+@enduml

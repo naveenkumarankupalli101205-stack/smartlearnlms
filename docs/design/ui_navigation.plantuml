@@ -1,0 +1,104 @@
+@startuml SmartLearn_Navigation
+!theme plain
+
+state "Landing Page" as Landing {
+  [*] --> Landing
+  Landing : Hero Section
+  Landing : Features Overview
+  Landing : CTA Buttons
+}
+
+state "Authentication" as Auth {
+  state "Login" as Login
+  state "Register" as Register
+  state "Forgot Password" as ForgotPwd
+  state "Email Verification" as EmailVerify
+  
+  Login : Email + Password
+  Register : Name, Email, Password, Role
+  ForgotPwd : Email Reset
+  EmailVerify : Verification Required
+}
+
+state "Student Dashboard" as StudentDash {
+  state "My Courses" as MyCourses
+  state "Available Courses" as AvailableCourses
+  state "My Assignments" as MyAssignments
+  state "My Grades" as MyGrades
+  state "Profile" as StudentProfile
+  
+  [*] --> MyCourses
+  MyCourses --> AvailableCourses : browse courses
+  MyCourses --> MyAssignments : view assignments
+  MyAssignments --> MyGrades : check grades
+  AvailableCourses --> MyCourses : after enrollment
+}
+
+state "Teacher Dashboard" as TeacherDash {
+  state "My Courses" as TeacherCourses
+  state "Create Course" as CreateCourse
+  state "Manage Assignments" as ManageAssignments
+  state "Grade Submissions" as GradeSubmissions
+  state "Student Management" as StudentMgmt
+  state "Profile" as TeacherProfile
+  
+  [*] --> TeacherCourses
+  TeacherCourses --> CreateCourse : add new course
+  TeacherCourses --> ManageAssignments : manage content
+  ManageAssignments --> GradeSubmissions : review work
+  TeacherCourses --> StudentMgmt : view enrollments
+}
+
+state "Course Detail" as CourseDetail {
+  state "Course Info" as CourseInfo
+  state "Assignments List" as AssignmentsList
+  state "Enrolled Students" as EnrolledStudents
+  
+  [*] --> CourseInfo
+  CourseInfo --> AssignmentsList : view assignments
+  CourseInfo --> EnrolledStudents : view students (teacher only)
+}
+
+state "Assignment Detail" as AssignmentDetail {
+  state "Assignment Info" as AssignmentInfo
+  state "Submit Work" as SubmitWork
+  state "View Submissions" as ViewSubmissions
+  state "Grade Work" as GradeWork
+  
+  [*] --> AssignmentInfo
+  AssignmentInfo --> SubmitWork : student action
+  AssignmentInfo --> ViewSubmissions : teacher action
+  ViewSubmissions --> GradeWork : grade student work
+}
+
+' Navigation flows
+Landing --> Auth : Sign In / Register
+Auth --> StudentDash : student login success
+Auth --> TeacherDash : teacher login success
+
+StudentDash --> CourseDetail : select course
+TeacherDash --> CourseDetail : select course
+CourseDetail --> AssignmentDetail : select assignment
+
+StudentDash --> StudentProfile : profile menu
+TeacherDash --> TeacherProfile : profile menu
+
+' Back navigation
+CourseDetail --> StudentDash : back (student)
+CourseDetail --> TeacherDash : back (teacher)
+AssignmentDetail --> CourseDetail : back
+StudentProfile --> StudentDash : back
+TeacherProfile --> TeacherDash : back
+
+' Logout flows
+StudentDash --> Landing : logout
+TeacherDash --> Landing : logout
+StudentProfile --> Landing : logout
+TeacherProfile --> Landing : logout
+
+' Error states
+Auth --> Auth : validation errors
+EmailVerify --> Auth : verification complete
+ForgotPwd --> Auth : reset complete
+
+@enduml

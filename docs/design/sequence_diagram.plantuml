@@ -1,0 +1,186 @@
+@startuml SmartLearn_Sequence
+!theme plain
+
+actor Student
+actor Teacher
+participant "React App" as App
+participant "Auth Context" as AuthCtx
+participant "Supabase Auth" as Auth
+participant "Supabase DB" as DB
+participant "Supabase Storage" as Storage
+participant "Email Service" as Email
+
+== User Registration ==
+Student -> App: Navigate to /register
+App -> App: Render RegisterPage
+Student -> App: Submit registration form
+    note right
+        Input: {
+            "name": "John Doe",
+            "email": "john@example.com",
+            "password": "password123",
+            "role": "student"
+        }
+    end note
+App -> Auth: signUp(email, password, metadata)
+Auth -> DB: Insert user profile
+    note right
+        Insert into profiles: {
+            "id": "uuid",
+            "name": "John Doe",
+            "email": "john@example.com",
+            "role": "student",
+            "email_verified": false
+        }
+    end note
+Auth -> Email: Send verification email
+Auth --> App: Registration success
+    note right
+        Output: {
+            "user": null,
+            "session": null,
+            "message": "Check your email for verification"
+        }
+    end note
+App --> Student: Show verification message
+
+== Email Verification ==
+Student -> Email: Click verification link
+Email -> Auth: Verify email token
+Auth -> DB: Update email_verified = true
+Auth --> Student: Redirect to login
+
+== User Login ==
+Student -> App: Navigate to /login
+App -> App: Render LoginPage
+Student -> App: Submit login credentials
+    note right
+        Input: {
+            "email": "john@example.com",
+            "password": "password123"
+        }
+    end note
+App -> AuthCtx: signIn(email, password)
+AuthCtx -> Auth: signInWithPassword(email, password)
+Auth -> DB: Validate credentials & get profile
+    note right
+        Query: SELECT * FROM profiles 
+        WHERE email = 'john@example.com'
+        AND email_verified = true
+    end note
+DB --> Auth: User profile data
+    note right
+        Output: {
+            "id": "uuid",
+            "name": "John Doe",
+            "email": "john@example.com",
+            "role": "student",
+            "email_verified": true
+        }
+    end note
+Auth --> AuthCtx: Session + User data
+AuthCtx -> AuthCtx: Update context state
+AuthCtx --> App: Authentication success
+App -> App: Redirect to /student-dashboard
+
+== Course Enrollment ==
+Student -> App: View available courses
+App -> DB: SELECT * FROM courses WHERE id NOT IN (enrolled courses)
+DB --> App: Available courses list
+    note right
+        Output: [{
+            "id": "course-1",
+            "title": "React Fundamentals",
+            "description": "Learn React basics",
+            "duration": "4 weeks",
+            "created_by": "teacher-id"
+        }]
+    end note
+Student -> App: Click "Enroll" button
+App -> DB: INSERT INTO enrollments
+    note right
+        Input: {
+            "student_id": "student-uuid",
+            "course_id": "course-1",
+            "enrolled_at": "2024-01-15T10:00:00Z"
+        }
+    end note
+DB --> App: Enrollment success
+App --> Student: Show success message
+
+== Assignment Submission ==
+Student -> App: Navigate to assignment
+App -> DB: GET assignment details
+DB --> App: Assignment data
+    note right
+        Output: {
+            "id": "assignment-1",
+            "title": "React Components",
+            "description": "Build a todo app",
+            "due_date": "2024-01-20T23:59:59Z",
+            "course_id": "course-1"
+        }
+    end note
+Student -> App: Upload file + submit text
+App -> Storage: Upload file
+    note right
+        Input: {
+            "file": File object,
+            "path": "submissions/assignment-1/student-uuid/file.pdf"
+        }
+    end note
+Storage --> App: File URL
+    note right
+        Output: {
+            "path": "submissions/assignment-1/student-uuid/file.pdf",
+            "fullPath": "https://supabase.co/storage/v1/object/public/..."
+        }
+    end note
+App -> DB: INSERT INTO submissions
+    note right
+        Input: {
+            "assignment_id": "assignment-1",
+            "student_id": "student-uuid",
+            "content": "My solution explanation...",
+            "file_url": "https://supabase.co/storage/...",
+            "submitted_at": "2024-01-18T14:30:00Z"
+        }
+    end note
+DB --> App: Submission success
+App --> Student: Show confirmation
+
+== Teacher Grading ==
+Teacher -> App: Navigate to submissions
+App -> DB: GET submissions for assignment
+    note right
+        Query: SELECT s.*, p.name as student_name 
+        FROM submissions s 
+        JOIN profiles p ON s.student_id = p.id 
+        WHERE s.assignment_id = 'assignment-1'
+    end note
+DB --> App: Submissions with student info
+    note right
+        Output: [{
+            "id": "submission-1",
+            "student_name": "John Doe",
+            "content": "My solution...",
+            "file_url": "https://...",
+            "submitted_at": "2024-01-18T14:30:00Z",
+            "grade": null,
+            "feedback": null
+        }]
+    end note
+Teacher -> App: Submit grade and feedback
+App -> DB: UPDATE submissions SET grade, feedback
+    note right
+        Input: {
+            "submission_id": "submission-1",
+            "grade": 85,
+            "feedback": "Good work! Consider improving...",
+            "graded_at": "2024-01-19T09:15:00Z"
+        }
+    end note
+DB --> App: Update success
+App --> Teacher: Show success message
+
+@enduml

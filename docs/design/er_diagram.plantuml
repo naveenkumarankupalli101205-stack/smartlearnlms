@@ -1,0 +1,127 @@
+@startuml SmartLearn_ER
+!theme plain
+
+entity "profiles" as profiles {
+  * id : uuid <<PK>>
+  --
+  * name : varchar(255)
+  * email : varchar(255) <<unique>>
+  * role : varchar(20) <<check: role IN ('student', 'teacher')>>
+  * email_verified : boolean <<default: false>>
+  * avatar_url : text <<nullable>>
+  * created_at : timestamp <<default: now()>>
+  * updated_at : timestamp <<default: now()>>
+}
+
+entity "courses" as courses {
+  * id : uuid <<PK>>
+  --
+  * title : varchar(255)
+  * description : text
+  * duration : varchar(100)
+  * created_by : uuid <<FK>>
+  * thumbnail_url : text <<nullable>>
+  * is_active : boolean <<default: true>>
+  * created_at : timestamp <<default: now()>>
+  * updated_at : timestamp <<default: now()>>
+}
+
+entity "enrollments" as enrollments {
+  * id : uuid <<PK>>
+  --
+  * student_id : uuid <<FK>>
+  * course_id : uuid <<FK>>
+  * enrolled_at : timestamp <<default: now()>>
+  * completed_at : timestamp <<nullable>>
+  * progress : integer <<default: 0, check: progress >= 0 AND progress <= 100>>
+}
+
+entity "assignments" as assignments {
+  * id : uuid <<PK>>
+  --
+  * course_id : uuid <<FK>>
+  * title : varchar(255)
+  * description : text
+  * due_date : timestamp
+  * max_points : integer <<default: 100>>
+  * created_by : uuid <<FK>>
+  * is_active : boolean <<default: true>>
+  * created_at : timestamp <<default: now()>>
+  * updated_at : timestamp <<default: now()>>
+}
+
+entity "submissions" as submissions {
+  * id : uuid <<PK>>
+  --
+  * assignment_id : uuid <<FK>>
+  * student_id : uuid <<FK>>
+  * content : text <<nullable>>
+  * file_url : text <<nullable>>
+  * grade : integer <<nullable, check: grade >= 0 AND grade <= max_points>>
+  * feedback : text <<nullable>>
+  * submitted_at : timestamp <<default: now()>>
+  * graded_at : timestamp <<nullable>>
+  * is_late : boolean <<default: false>>
+}
+
+' Relationships
+profiles ||--o{ courses : "profiles.id -> courses.created_by"
+profiles ||--o{ enrollments : "profiles.id -> enrollments.student_id"
+profiles ||--o{ assignments : "profiles.id -> assignments.created_by"
+profiles ||--o{ submissions : "profiles.id -> submissions.student_id"
+
+courses ||--o{ enrollments : "courses.id -> enrollments.course_id"
+courses ||--o{ assignments : "courses.id -> assignments.course_id"
+
+assignments ||--o{ submissions : "assignments.id -> submissions.assignment_id"
+
+' Composite unique constraints
+note right of enrollments
+  UNIQUE(student_id, course_id)
+  - Prevents duplicate enrollments
+end note
+
+note right of submissions
+  UNIQUE(assignment_id, student_id)
+  - One submission per student per assignment
+end note
+
+' Indexes for performance
+note left of profiles
+  Indexes:
+  - email (unique)
+  - role
+  - created_at
+end note
+
+note left of courses
+  Indexes:
+  - created_by
+  - is_active
+  - created_at
+end note
+
+note left of enrollments
+  Indexes:
+  - student_id
+  - course_id
+  - enrolled_at
+end note
+
+note left of assignments
+  Indexes:
+  - course_id
+  - created_by
+  - due_date
+  - is_active
+end note
+
+note left of submissions
+  Indexes:
+  - assignment_id
+  - student_id
+  - submitted_at
+  - graded_at
+end note
+
+@enduml

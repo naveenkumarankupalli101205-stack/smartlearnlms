@@ -1,0 +1,65 @@
+@startuml SmartLearn_Architecture
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam componentStyle rectangle
+
+package "Frontend (React.js)" {
+    [Landing Page] as landing
+    [Authentication] as auth
+    [Student Dashboard] as student_dash
+    [Teacher Dashboard] as teacher_dash
+    [Course Management] as course_mgmt
+    [Assignment System] as assignment_sys
+    [File Upload] as file_upload
+    [Notification System] as notifications
+}
+
+package "Supabase Backend" {
+    [Auth Service] as supabase_auth
+    [Database] as supabase_db
+    [Storage] as supabase_storage
+    [Real-time] as supabase_realtime
+    [Edge Functions] as edge_functions
+}
+
+package "External Services" {
+    [Email Service] as email
+    [CDN] as cdn
+    [Vercel/Netlify] as deployment
+}
+
+cloud "Internet" {
+    [Users] as users
+}
+
+users --> deployment : HTTPS
+deployment --> landing
+deployment --> auth
+deployment --> student_dash
+deployment --> teacher_dash
+
+auth --> supabase_auth : Authentication
+student_dash --> supabase_db : Query Data
+teacher_dash --> supabase_db : CRUD Operations
+course_mgmt --> supabase_db : Course Data
+assignment_sys --> supabase_db : Assignment Data
+file_upload --> supabase_storage : File Operations
+
+supabase_auth --> email : Verification Emails
+supabase_storage --> cdn : File Delivery
+supabase_realtime --> notifications : Live Updates
+
+note right of supabase_db
+  - PostgreSQL Database
+  - Row Level Security (RLS)
+  - Real-time subscriptions
+end note
+
+note right of supabase_auth
+  - JWT Token Management
+  - Email Verification
+  - Password Reset
+  - Role-based Access
+end note
+
+@enduml
